@@ -6,7 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 
 const courseRoutes = require('./routes/courseRoutes');
-
+const feeRoutes = require('./routes/feeRoutes'); 
 const authRoutes = require('./routes/authRoutes');
 // Importing this file automatically runs the pool.getConnection() test we wrote!
 const db = require('./config/db'); 
@@ -39,6 +39,8 @@ app.use('/api/v1/auth', authRoutes);
 
 // Course Routes
 app.use('/api/v1/courses', courseRoutes);
+
+app.use('/api/v1/fees', feeRoutes); 
 
 // Start the server
 const PORT = process.env.PORT || 5000;

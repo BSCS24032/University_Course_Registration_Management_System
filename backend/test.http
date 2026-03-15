@@ -60,3 +60,13 @@ Content-Type: application/json
   "student_id": 2,
   "section_id": 15
 }
+
+### Pay Fee (Success)
+POST http://localhost:5000/api/v1/fees/pay
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzM1NzE5NDEsImV4cCI6MTc3MzY1ODM0MX0.rso0PJQKdDFa2lFyHXhy-BuHn80_2cWhC5YTvhq0-Ho
+
+{
+    "fee_id": 1,
+    "payment_amount": 65000
+}

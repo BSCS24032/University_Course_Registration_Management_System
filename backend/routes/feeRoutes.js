@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const feeController = require('../controllers/feeController');
-
-// 1. Import the CORRECT names from your middleware file
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// 2. Use 'authenticateToken' instead of 'protect'
-router.post('/pay', authenticateToken, feeController.processFeePayment);
+// Route to get student's specific fee records
+router.get('/my-fees', authenticateToken, authorizeRoles('Student'), feeController.getMyFees);
+
+// Route to process a payment
+router.post('/pay', authenticateToken, authorizeRoles('Student'), feeController.processFeePayment);
 
 module.exports = router;

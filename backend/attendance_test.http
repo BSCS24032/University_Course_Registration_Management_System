@@ -1,0 +1,80 @@
+### -----------------------------------------------------------
+### 0A. REGISTER NEW INSTRUCTOR (Run this ONCE)
+### -----------------------------------------------------------
+POST http://localhost:5000/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "email": "instructor@ums.edu.pk",
+    "password": "SuperSecretPassword123",
+    "role": "Instructor"
+}
+
+### -----------------------------------------------------------
+### 0B. REGISTER NEW STUDENT (Run this ONCE)
+### -----------------------------------------------------------
+POST http://localhost:5000/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "email": "student1@ums.edu.pk",
+    "password": "SuperSecretPassword123",
+    "role": "Student"
+}
+
+
+
+
+
+
+### -----------------------------------------------------------
+### 1. LOGIN AS INSTRUCTOR (To get the security token)
+### -----------------------------------------------------------
+# Replace the email and password below with your actual Instructor's email and password from your database.
+POST http://localhost:5000/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "instructor@ums.edu.pk", 
+    "password": "SuperSecretPassword123"
+}
+
+### -----------------------------------------------------------
+### 2. INSTRUCTOR MARKS ATTENDANCE
+### -----------------------------------------------------------
+# 1. Look at the response from the Login request above.
+# 2. Copy the long random text next to "token".
+# 3. Paste it below, replacing the words YOUR_INSTRUCTOR_TOKEN_HERE (keep the word Bearer and the space).
+POST http://localhost:5000/api/v1/attendance
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJyb2xlIjoiSW5zdHJ1Y3RvciIsImlhdCI6MTc3NDM2MjMxMCwiZXhwIjoxNzc0NDQ4NzEwfQ.rHbkLjIjvPNvrGDcLNjifWtGM4pcublDwGk23gKnJEQ
+
+{
+    "section_id": 1,
+    "date": "2026-03-24",
+    "records": [
+        { "student_id": 1, "status": "Present" },
+        { "student_id": 2, "status": "Absent" }
+    ]
+}
+
+### -----------------------------------------------------------
+### 3. LOGIN AS STUDENT (To get the security token)
+### -----------------------------------------------------------
+# Replace the email and password below with your actual Student's email and password.
+POST http://localhost:5000/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "student1@ums.edu.pk",
+    "password": "SuperSecretPassword123"
+}
+
+### -----------------------------------------------------------
+### 4. STUDENT VIEWS THEIR OWN ATTENDANCE
+### -----------------------------------------------------------
+# 1. Look at the response from the Student Login request above.
+# 2. Copy the token.
+# 3. Paste it below, replacing the words YOUR_STUDENT_TOKEN_HERE.
+GET http://localhost:5000/api/v1/attendance/my-records
+Authorization: Bearer YOUR_STUDENT_TOKEN_HERE

@@ -8,6 +8,7 @@ const YAML = require('yamljs');
 const courseRoutes = require('./routes/courseRoutes');
 const feeRoutes = require('./routes/feeRoutes'); 
 const authRoutes = require('./routes/authRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 // Importing this file automatically runs the pool.getConnection() test we wrote!
 const db = require('./config/db'); 
 
@@ -41,6 +42,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/courses', courseRoutes);
 
 app.use('/api/v1/fees', feeRoutes); 
+
+app.use('/api/v1/attendance', attendanceRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

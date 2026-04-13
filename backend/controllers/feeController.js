@@ -78,3 +78,17 @@ exports.processFeePayment = async (req, res) => {
         connection.release();
     }
 };
+
+// Add this to feeController.js
+exports.getMyFees = async (req, res) => {
+    const student_id = req.user.id;
+    try {
+        const [fees] = await pool.execute(
+            'SELECT * FROM vw_student_fee_summary WHERE student_id = ?',
+            [student_id]
+        );
+        res.status(200).json({ success: true, data: fees });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

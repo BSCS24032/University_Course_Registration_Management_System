@@ -11,7 +11,6 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Test the connection
 pool.getConnection()
     .then(connection => {
         console.log('Database connected successfully via Connection Pool!');

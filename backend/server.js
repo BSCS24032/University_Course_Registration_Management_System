@@ -9,25 +9,20 @@ const courseRoutes = require('./routes/courseRoutes');
 const feeRoutes = require('./routes/feeRoutes'); 
 const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
-// Importing this file automatically runs the pool.getConnection() test we wrote!
-const db = require('./config/db'); 
-
+const adminRoutes = require('./routes/adminRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 
+const db = require('./config/db'); 
 
 const app = express();
 
-// Middleware
 app.use(cors());
-// Allow requests from our React frontend
 app.use(cors({ origin: 'http://localhost:5173' }));
-app.use(express.json()); // Allows our API to read JSON data from requests
+app.use(express.json());
 
-// Swagger API Documentation Route
 const swaggerDocument = YAML.load('./swagger.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// A simple Health Check route (Notice the /api/v1/ versioning required by Phase 2)
 app.get('/api/v1/health', (req, res) => {
     res.status(200).json({ 
         status: 'success', 
@@ -35,24 +30,22 @@ app.get('/api/v1/health', (req, res) => {
     });
 });
 
-// Authentication Routes
 app.use('/api/v1/auth', authRoutes);
 
-// Course Routes
 app.use('/api/v1/courses', courseRoutes);
 
 app.use('/api/v1/fees', feeRoutes); 
 
 app.use('/api/v1/attendance', attendanceRoutes);
 
-// Start the server
+app.use('/api/v1/admin', adminRoutes);
+
+app.use('/api/v1/enrollment', enrollmentRoutes);
+
 const PORT = process.env.PORT || 5000;
 
 const { authenticateToken, authorizeRoles } = require('./middleware/authMiddleware');
-// Enrollment ACID Transaction Route
-app.use('/api/v1/enrollment', enrollmentRoutes);
 
-// A route ONLY Admins can see
 app.get('/api/v1/admin/dashboard', authenticateToken, authorizeRoles('Admin'), (req, res) => {
     res.status(200).json({ status: 'success', message: 'Welcome to the secret Admin Dashboard!' });
 });

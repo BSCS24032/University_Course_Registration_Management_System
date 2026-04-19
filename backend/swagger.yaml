@@ -1,8 +1,11 @@
 openapi: 3.0.0
 info:
   title: University Management System API
-  description: Phase 2 API Documentation including RBAC and ACID Transactions
-  version: 1.0.0
+  description: |
+    Phase 2 API for the University Management System. Implements JWT authentication,
+    RBAC for 4 roles (Admin, Instructor, Student, Librarian), and ACID-compliant
+    transactions using raw parameterized SQL on MySQL 8.0+.
+  version: 2.0.0
 
 servers:
   - url: http://localhost:5000/api/v1
@@ -14,6 +17,26 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: "JWT token obtained from /auth/login. Format: Bearer <token>"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
 
 security:
   - bearerAuth: []
@@ -22,44 +45,85 @@ paths:
   /health:
     get:
       summary: Health Check
-      description: Returns the status of the API
+      description: Returns the status of the API. No authentication required.
+      tags: [System]
       security: []
       responses:
         '200':
-          description: API is running successfully
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "University Management System API is running!"
 
   /auth/register:
     post:
       summary: Register a new user
-      description: Creates a new user with a hashed password and role
-      security: []
+      description: |
+        Creates a new user account. Without a token, the role defaults to Student.
+        To create Admin, Instructor, or Librarian accounts, include an Admin's JWT token.
+      tags: [Authentication]
+      security:
+        - {}
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [email, password]
               properties:
                 email:
                   type: string
-                  example: admin@ums.edu.pk
+                  format: email
+                  example: newstudent@stu.ums.edu.pk
                 password:
                   type: string
-                  example: SuperSecretPassword123
+                  minLength: 8
+                  example: MyPassword123
                 role:
                   type: string
-                  enum: [Admin, Instructor, Student]
-                  example: Admin
+                  enum: [Admin, Instructor, Student, Librarian]
+                  description: "Ignored unless request includes an Admin token. Defaults to Student."
+                  example: Student
       responses:
         '201':
           description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: User registered successfully.
+                  userId:
+                    type: integer
+                    example: 5
+                  role:
+                    type: string
+                    example: Student
         '400':
-          description: User already exists
+          description: User already exists or password too short
+        '403':
+          description: Only Admins can create elevated-role accounts
 
   /auth/login:
     post:
-      summary: Login user
-      description: Authenticates user and returns a JWT token
+      summary: Login
+      description: Authenticates a user and returns a JWT token valid for 24 hours.
+      tags: [Authentication]
       security: []
       requestBody:
         required: true
@@ -67,50 +131,235 @@ paths:
           application/json:
             schema:
               type: object
+              required: [email, password]
               properties:
                 email:
                   type: string
                   example: admin@ums.edu.pk
                 password:
                   type: string
-                  example: SuperSecretPassword123
+                  example: Admin@123
       responses:
         '200':
-          description: Logged in successfully
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Logged in successfully.
+                  token:
+                    type: string
+                    description: JWT token (include as Bearer token in subsequent requests)
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: admin@ums.edu.pk
+                      role:
+                        type: string
+                        example: Admin
+                      linked_id:
+                        type: integer
+                        nullable: true
+                        example: null
         '401':
           description: Invalid credentials
+        '403':
+          description: Account deactivated
+
+  /courses:
+    get:
+      summary: List all courses
+      description: Returns all courses from the catalogue. Requires authentication.
+      tags: [Courses]
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  results:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        course_id:
+                          type: integer
+                        course_code:
+                          type: string
+                          example: CS301
+                        name:
+                          type: string
+                          example: Database Systems
+                        credits:
+                          type: integer
+                          example: 3
+                        department_id:
+                          type: integer
+                        is_elective:
+                          type: boolean
+        '401':
+          description: No valid token provided
+
+  /courses/sections:
+    get:
+      summary: List all sections
+      description: Returns all sections with course name, capacity, and enrollment count.
+      tags: [Courses]
+      responses:
+        '200':
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        section_id:
+                          type: integer
+                        section_name:
+                          type: string
+                          example: "Fall 2025"
+                        capacity:
+                          type: integer
+                        enrolled_count:
+                          type: integer
+                        course_name:
+                          type: string
+        '401':
+          description: No valid token provided
 
   /enrollment:
     post:
       summary: Enroll in a section (ACID Transaction)
-      description: Enrolls a student using a raw SQL transaction (BEGIN, COMMIT, ROLLBACK). Requires Admin or Student role.
+      description: |
+        Enrolls a student in a course section using a full ACID transaction:
+        1. Locks the section row with FOR UPDATE
+        2. Checks capacity
+        3. Checks for duplicate enrollment
+        4. Verifies all prerequisites are completed
+        5. Inserts enrollment record (trigger updates enrolled_count)
+        
+        Students can only enroll themselves (ownership check via linked_id).
+        Admins can enroll any student.
+      tags: [Enrollment]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [student_id, section_id]
               properties:
                 student_id:
                   type: integer
                   example: 1
                 section_id:
                   type: integer
-                  example: 12
+                  example: 17
       responses:
         '201':
-          description: Student successfully enrolled
+          description: Student enrolled successfully (Transaction Committed)
         '400':
-          description: Transaction failed and rolled back (e.g., duplicate or capacity full)
+          description: |
+            Transaction rolled back. Possible reasons:
+            - Section not found
+            - Section at full capacity
+            - Already enrolled
+            - Missing prerequisites
+        '401':
+          description: No valid token provided
         '403':
-          description: Access denied (Invalid role)
+          description: Access denied (wrong role or student trying to enroll someone else)
+
+  /fees/my-fees:
+    get:
+      summary: View own fee records
+      description: Returns all fee records for the authenticated student (matched via linked_id in JWT).
+      tags: [Fees]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Fee records retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fee_id:
+                          type: integer
+                        student_id:
+                          type: integer
+                        semester:
+                          type: string
+                          example: Fall
+                        year:
+                          type: integer
+                          example: 2025
+                        total_amount:
+                          type: number
+                          example: 185000
+                        paid_amount:
+                          type: number
+                          example: 100000
+                        balance_due:
+                          type: number
+                          example: 85000
+                        payment_status:
+                          type: string
+                          enum: [Pending, Partial, Paid, Overdue]
+        '401':
+          description: No valid token provided
+        '403':
+          description: Only Students can access this endpoint
 
   /fees/pay:
     post:
       summary: Process a fee payment (ACID Transaction)
-      description: Securely processes a fee payment. Implements row-level locking and rollback on overpayment.
-      tags:
-        - Fees
+      description: |
+        Processes a fee payment using a full ACID transaction:
+        1. Locks the fee row with FOR UPDATE
+        2. Validates fee exists and is not already paid
+        3. Uses integer arithmetic to avoid float equality bugs
+        4. Prevents overpayment
+        5. Updates paid_amount and status
+        
+        Students can only pay their own fees (ownership check via linked_id).
+      tags: [Fees]
       security:
         - bearerAuth: []
       requestBody:
@@ -119,21 +368,149 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - fee_id
-                - payment_amount
+              required: [fee_id, payment_amount]
               properties:
                 fee_id:
                   type: integer
-                  example: 1
+                  example: 3
                 payment_amount:
                   type: number
                   format: float
-                  example: 10000
+                  example: 50000
       responses:
         '200':
           description: Payment processed successfully (Transaction Committed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      fee_id:
+                        type: integer
+                      new_paid_amount:
+                        type: number
+                      status:
+                        type: string
+                        enum: [Partial, Paid]
         '400':
-          description: Bad Request / Overpayment (Transaction Rolled Back)
+          description: |
+            Transaction rolled back. Possible reasons:
+            - Fee voucher not found
+            - Already fully paid
+            - Overpayment attempted
+            - Student trying to pay another student's fee
         '401':
-          description: Unauthorized - No valid token provided
+          description: No valid token provided
+
+  /attendance:
+    post:
+      summary: Mark attendance (Instructor only)
+      description: |
+        Marks attendance for multiple students in a section. Uses a transaction to
+        ensure all records are inserted atomically. Looks up enrollment_id from
+        student_id + section_id automatically.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [section_id, date, records]
+              properties:
+                section_id:
+                  type: integer
+                  example: 1
+                date:
+                  type: string
+                  format: date
+                  example: "2026-04-19"
+                records:
+                  type: array
+                  items:
+                    type: object
+                    required: [student_id, status]
+                    properties:
+                      student_id:
+                        type: integer
+                        example: 4
+                      status:
+                        type: string
+                        enum: [Present, Absent, Late, Excused]
+                        example: Present
+      responses:
+        '201':
+          description: Attendance marked successfully
+        '400':
+          description: Invalid data or student not enrolled in section
+        '401':
+          description: No valid token provided
+        '403':
+          description: Only Instructors can mark attendance
+
+  /attendance/my-records:
+    get:
+      summary: View own attendance (Student only)
+      description: Returns all attendance records for the authenticated student with course information.
+      tags: [Attendance]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Attendance records retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        attendance_date:
+                          type: string
+                          format: date
+                        status:
+                          type: string
+                          enum: [Present, Absent, Late, Excused]
+                        course_code:
+                          type: string
+                        course_name:
+                          type: string
+                        semester:
+                          type: string
+                        year:
+                          type: integer
+        '401':
+          description: No valid token provided
+        '403':
+          description: Only Students can access this endpoint
+
+  /admin/dashboard:
+    get:
+      summary: Admin Dashboard
+      description: Protected admin-only endpoint. Returns a welcome message.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admin dashboard data
+        '401':
+          description: No valid token provided
+        '403':
+          description: Only Admins can access this endpoint

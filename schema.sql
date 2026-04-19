@@ -355,6 +355,24 @@ CREATE TABLE hostel_allocation (
 ) ENGINE=InnoDB;
 
 -- ============================================================================
+-- 18. USERS  (authentication & authorization for the backend API)
+-- ============================================================================
+CREATE TABLE users (
+    user_id         INT             AUTO_INCREMENT,
+    email           VARCHAR(100)    NOT NULL,
+    password_hash   VARCHAR(255)    NOT NULL,
+    role            ENUM('Admin','Instructor','Student','Librarian') NOT NULL,
+    linked_id       INT             DEFAULT NULL COMMENT 'FK to student_id or instructor_id (set after registration)',
+    is_active       BOOLEAN         NOT NULL DEFAULT TRUE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login      DATETIME        DEFAULT NULL,
+    CONSTRAINT pk_users             PRIMARY KEY (user_id),
+    CONSTRAINT uq_users_email       UNIQUE (email),
+    INDEX idx_users_email (email),
+    INDEX idx_users_role  (role)
+) ENGINE=InnoDB;
+
+-- ============================================================================
 -- INDEXES  (beyond the automatic PK/UNIQUE/FK indexes)
 -- ============================================================================
 

@@ -3,10 +3,10 @@ const router = express.Router();
 const feeController = require('../controllers/feeController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// Route to get student's specific fee records
+// Student views their own fee records
 router.get('/my-fees', authenticateToken, authorizeRoles('Student'), feeController.getMyFees);
 
-// Route to process a payment
-router.post('/pay', authenticateToken, authorizeRoles('Student'), feeController.processFeePayment);
+// Student or Admin processes a payment
+router.post('/pay', authenticateToken, authorizeRoles('Admin', 'Student'), feeController.processFeePayment);
 
 module.exports = router;

@@ -406,6 +406,15 @@ INSERT INTO hostel_allocation (allocation_id, student_id, room_id, alloc_date, v
 (11, 15, 11, '2025-08-20', NULL,         'Active'),
 (12, 19, 13, '2025-08-20', '2025-10-01', 'Vacated');  -- suspended student vacated
 
+-- ============================================================================
+-- USERS  (4 seed accounts — password for all: Admin@123)
+-- ============================================================================
+INSERT INTO users (user_id, email, password_hash, role, linked_id) VALUES
+(1, 'admin@ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Admin',      NULL),
+(2, 'ahmed.khan@ums.edu.pk', '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 1),
+(3, 'ali.ahmad@stu.ums.edu.pk','$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',  1),
+(4, 'librarian@ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Librarian',  NULL);
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================================
@@ -428,6 +437,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- hostel:              3
 -- hostel_room:        15
 -- hostel_allocation:  12
+-- users:               4
 -- --------------------------------
--- GRAND TOTAL:       275 records
+-- GRAND TOTAL:       279 records
 -- ============================================================================

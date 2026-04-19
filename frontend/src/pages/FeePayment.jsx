@@ -79,7 +79,7 @@ const FeePayment = () => {
                                         <input 
                                             type="radio" 
                                             name="feeSelect" 
-                                            onChange={() => setSelectedFee(f.student_id)} // Assumes fee_id logic matches student_id or add fee_id to view
+                                            onChange={() => setSelectedFee(f.fee_id)}
                                         />
                                     )}
                                 </td>

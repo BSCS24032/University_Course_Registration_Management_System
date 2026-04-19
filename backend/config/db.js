@@ -11,13 +11,15 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+// Test the connection — exit if DB is unreachable
 pool.getConnection()
     .then(connection => {
         console.log('Database connected successfully via Connection Pool!');
         connection.release();
     })
     .catch(err => {
-        console.error('Database connection failed:', err.message);
+        console.error('FATAL: Database connection failed:', err.message);
+        process.exit(1);
     });
 
 module.exports = pool;

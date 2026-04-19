@@ -72,7 +72,7 @@ const StudentDashboard = () => {
                             {attendanceRecords.length > 0 ? (
                                 attendanceRecords.map((record, index) => (
                                     <tr key={index}>
-                                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{new Date(record.date).toLocaleDateString()}</td>
+                                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{new Date(record.attendance_date).toLocaleDateString()}</td>
                                         <td style={{ padding: '12px', border: '1px solid #ddd' }}>{record.course_name}</td>
                                         <td style={{ 
                                             padding: '12px', 

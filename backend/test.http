@@ -1,72 +1,140 @@
-### 1. Register a New Admin User
-POST http://localhost:5000/api/v1/auth/register
+### ============================================================
+### University Management System — API Test Requests
+### Use with VS Code REST Client extension
+### Run requests in order: Login first, then copy token to @token
+### ============================================================
+
+@baseUrl = http://localhost:5000/api/v1
+@token = PASTE_YOUR_TOKEN_HERE
+
+### -----------------------------------------------------------
+### 1. Health Check
+### -----------------------------------------------------------
+GET {{baseUrl}}/health
+
+### -----------------------------------------------------------
+### 2. Login as Admin (seed account)
+### -----------------------------------------------------------
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@ums.edu.pk",
-  "password": "SuperSecretPassword123",
-  "role": "Admin"
+    "email": "admin@ums.edu.pk",
+    "password": "Admin@123"
 }
 
-###
-
-### 2. Login to Get Your Token
-POST http://localhost:5000/api/v1/auth/login
+### -----------------------------------------------------------
+### 3. Login as Student (seed account — linked to student_id 1)
+### -----------------------------------------------------------
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@ums.edu.pk",
-  "password": "SuperSecretPassword123"
+    "email": "ali.ahmad@stu.ums.edu.pk",
+    "password": "Admin@123"
 }
 
-### 3. Test Secret Route (Without Token - Should Fail)
-GET http://localhost:5000/api/v1/admin/dashboard
-
-###
-
-### 4. Test Secret Route (With Token - Should Succeed)
-# REPLACE "your_actual_token_here" with the massive string you got from logging in!
-GET http://localhost:5000/api/v1/admin/dashboard
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzMxNDM0MDgsImV4cCI6MTc3MzIyOTgwOH0.ixRcq_f9BX3dGUNFf6BOvHDHdpZFqtZTVWS79636K4g
-
-### 5. ACID Transaction (Success Case)
-POST http://localhost:5000/api/v1/enrollment
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzMxNDM0MDgsImV4cCI6MTc3MzIyOTgwOH0.ixRcq_f9BX3dGUNFf6BOvHDHdpZFqtZTVWS79636K4g
+### -----------------------------------------------------------
+### 4. Login as Instructor (seed account — linked to instructor_id 1)
+### -----------------------------------------------------------
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "student_id": 1,
-  "section_id": 5
+    "email": "ahmed.khan@ums.edu.pk",
+    "password": "Admin@123"
 }
 
-###
-
-### 6. ACID Transaction (Rollback / Failure Case - Duplicate)
-POST http://localhost:5000/api/v1/enrollment
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzMxNDM0MDgsImV4cCI6MTc3MzIyOTgwOH0.ixRcq_f9BX3dGUNFf6BOvHDHdpZFqtZTVWS79636K4g
+### -----------------------------------------------------------
+### 5. Register a new Student (no token needed)
+### -----------------------------------------------------------
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "student_id": 1,
-  "section_id": 5
+    "email": "newstudent@test.com",
+    "password": "TestPassword123"
 }
 
-### 7. ACID Transaction (Success Case - COMMIT)
-POST http://localhost:5000/api/v1/enrollment
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzMxNDM0MDgsImV4cCI6MTc3MzIyOTgwOH0.ixRcq_f9BX3dGUNFf6BOvHDHdpZFqtZTVWS79636K4g
+### -----------------------------------------------------------
+### 6. Register an Instructor (requires Admin token)
+### -----------------------------------------------------------
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "student_id": 2,
-  "section_id": 15
+    "email": "newinstructor@test.com",
+    "password": "TestPassword123",
+    "role": "Instructor"
 }
 
-### Pay Fee (Success)
-POST http://localhost:5000/api/v1/fees/pay
+### -----------------------------------------------------------
+### 7. Get All Courses
+### -----------------------------------------------------------
+GET {{baseUrl}}/courses
+Authorization: Bearer {{token}}
+
+### -----------------------------------------------------------
+### 8. Get All Sections
+### -----------------------------------------------------------
+GET {{baseUrl}}/courses/sections
+Authorization: Bearer {{token}}
+
+### -----------------------------------------------------------
+### 9. Enroll Student (ACID Transaction — use Student token)
+### -----------------------------------------------------------
+POST {{baseUrl}}/enrollment
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzM1NzE5NDEsImV4cCI6MTc3MzY1ODM0MX0.rso0PJQKdDFa2lFyHXhy-BuHn80_2cWhC5YTvhq0-Ho
+Authorization: Bearer {{token}}
 
 {
-    "fee_id": 1,
-    "payment_amount": 65000
+    "student_id": 1,
+    "section_id": 17
 }
+
+### -----------------------------------------------------------
+### 10. Get My Fees (Student token)
+### -----------------------------------------------------------
+GET {{baseUrl}}/fees/my-fees
+Authorization: Bearer {{token}}
+
+### -----------------------------------------------------------
+### 11. Pay Fee (ACID Transaction — use Student token)
+### -----------------------------------------------------------
+POST {{baseUrl}}/fees/pay
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "fee_id": 3,
+    "payment_amount": 50000
+}
+
+### -----------------------------------------------------------
+### 12. Mark Attendance (Instructor token)
+### -----------------------------------------------------------
+POST {{baseUrl}}/attendance
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "section_id": 3,
+    "date": "2026-04-19",
+    "records": [
+        { "student_id": 1, "status": "Present" },
+        { "student_id": 2, "status": "Absent" }
+    ]
+}
+
+### -----------------------------------------------------------
+### 13. Get My Attendance (Student token)
+### -----------------------------------------------------------
+GET {{baseUrl}}/attendance/my-records
+Authorization: Bearer {{token}}
+
+### -----------------------------------------------------------
+### 14. Admin Dashboard (Admin token)
+### -----------------------------------------------------------
+GET {{baseUrl}}/admin/dashboard
+Authorization: Bearer {{token}}

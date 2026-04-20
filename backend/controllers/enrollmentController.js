@@ -4,11 +4,12 @@ const db = require('../config/db');
  * ACID Transaction: Enroll a student in a section.
  * Enforces, in order:
  *   1. Ownership (students can only enroll themselves)
- *   2. Section capacity
- *   3. No duplicate enrollment
- *   4. Program-course eligibility (course must be in student's program_course list)
- *   5. Credit-hour limit
- *   6. Prerequisites completed
+ *   2. Semester registration window is open
+ *   3. Section capacity (if full, suggests waitlist)
+ *   4. No duplicate enrollment
+ *   5. Program-course eligibility
+ *   6. Credit-hour limit
+ *   7. Prerequisites completed
  */
 const enrollStudent = async (req, res) => {
     const { student_id, section_id } = req.body;
@@ -28,8 +29,27 @@ const enrollStudent = async (req, res) => {
         await conn.beginTransaction();
         console.log(`\n--- Transaction Started: Enroll Student ${student_id} in Section ${section_id} ---`);
 
+        // 2. Semester window check
+        const [sems] = await conn.execute(
+            `SELECT semester_id, term, year, registration_open, registration_close
+             FROM semester WHERE status = 'Active' LIMIT 1`
+        );
+        if (sems.length === 0) {
+            throw new Error('No active semester — enrollment is closed.');
+        }
+        const active = sems[0];
+        const today = new Date().toISOString().slice(0, 10);
+        if (today < active.registration_open.toISOString().slice(0, 10)) {
+            throw new Error(`Registration opens on ${active.registration_open.toISOString().slice(0,10)} for ${active.term} ${active.year}.`);
+        }
+        if (today > active.registration_close.toISOString().slice(0, 10)) {
+            throw new Error(`Registration closed on ${active.registration_close.toISOString().slice(0,10)} for ${active.term} ${active.year}.`);
+        }
+        console.log('  ✓ Semester window check passed');
+
         const [sections] = await conn.execute(
-            `SELECT s.section_id, s.course_id, s.capacity, s.enrolled_count, c.credits, c.course_code, c.name
+            `SELECT s.section_id, s.course_id, s.capacity, s.enrolled_count,
+                    s.semester, s.year, c.credits, c.course_code, c.name
              FROM section s JOIN course c ON s.course_id = c.course_id
              WHERE s.section_id = ? FOR UPDATE`,
             [section_id]
@@ -37,7 +57,14 @@ const enrollStudent = async (req, res) => {
         if (sections.length === 0) throw new Error('Section not found.');
         const sec = sections[0];
 
-        if (sec.enrolled_count >= sec.capacity) throw new Error('Section is at full capacity.');
+        // Section must belong to the active semester
+        if (sec.semester !== active.term || sec.year !== active.year) {
+            throw new Error(`This section is for ${sec.semester} ${sec.year}, not the current registration period.`);
+        }
+
+        if (sec.enrolled_count >= sec.capacity) {
+            throw new Error('SECTION_FULL: This section is full. You may join the waitlist.');
+        }
         console.log('  ✓ Capacity check passed');
 
         const [students] = await conn.execute(
@@ -114,6 +141,21 @@ const enrollStudent = async (req, res) => {
             [student_id, section_id, 'Enrolled']
         );
 
+        // Notify the student of successful enrollment
+        const [[userRow]] = await conn.execute(
+            `SELECT user_id FROM users WHERE role = 'Student' AND linked_id = ? LIMIT 1`,
+            [student_id]
+        );
+        if (userRow) {
+            await conn.execute(
+                `INSERT INTO notification (user_id, type, title, body, link)
+                 VALUES (?, 'General', ?, ?, '/enrollment')`,
+                [userRow.user_id,
+                 'Enrollment confirmed',
+                 `You are now enrolled in ${sec.course_code} — ${sec.name}.`]
+            );
+        }
+
         await conn.commit();
         console.log('--- Transaction Committed Successfully ---\n');
 
@@ -125,20 +167,22 @@ const enrollStudent = async (req, res) => {
     } catch (error) {
         await conn.rollback();
         console.error('--- TRANSACTION ROLLED BACK ---', error.message, '\n');
-        res.status(400).json({ status: 'error', message: error.message });
+        // Surface SECTION_FULL as a 409 so the frontend can offer waitlist
+        const status = error.message.startsWith('SECTION_FULL') ? 409 : 400;
+        res.status(status).json({ status: 'error', message: error.message });
     } finally {
         conn.release();
     }
 };
 
-/** Drop an enrollment (trigger auto-decrements section.enrolled_count). */
+/** Drop an enrollment. Trigger decrements enrolled_count and auto-promotes waitlist. */
 const dropEnrollment = async (req, res) => {
     const { enrollment_id } = req.params;
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
         const [rows] = await conn.execute(
-            'SELECT student_id, status FROM enrollment WHERE enrollment_id = ? FOR UPDATE',
+            'SELECT student_id, section_id, status FROM enrollment WHERE enrollment_id = ? FOR UPDATE',
             [enrollment_id]
         );
         if (rows.length === 0) throw new Error('Enrollment not found.');
@@ -149,9 +193,23 @@ const dropEnrollment = async (req, res) => {
         }
         if (enr.status !== 'Enrolled') throw new Error(`Cannot drop: current status is '${enr.status}'.`);
 
+        // Check add/drop deadline for Student role
+        if (req.user.role === 'Student') {
+            const [sems] = await conn.execute(
+                `SELECT add_drop_deadline FROM semester WHERE status = 'Active' LIMIT 1`
+            );
+            if (sems.length > 0) {
+                const today = new Date().toISOString().slice(0, 10);
+                const deadline = sems[0].add_drop_deadline.toISOString().slice(0, 10);
+                if (today > deadline) {
+                    throw new Error(`Add/drop deadline has passed (${deadline}). Submit a formal withdrawal instead.`);
+                }
+            }
+        }
+
         await conn.execute("UPDATE enrollment SET status = 'Dropped' WHERE enrollment_id = ?", [enrollment_id]);
         await conn.commit();
-        res.status(200).json({ status: 'success', message: 'Enrollment dropped.' });
+        res.status(200).json({ status: 'success', message: 'Enrollment dropped. If anyone was waitlisted, the top entry has been promoted.' });
     } catch (error) {
         await conn.rollback();
         res.status(400).json({ status: 'error', message: error.message });
@@ -162,26 +220,27 @@ const dropEnrollment = async (req, res) => {
 
 /** List current user's enrollments. */
 const getMyEnrollments = async (req, res) => {
-    const student_id = req.user.linked_id;
-    if (!student_id) return res.status(400).json({ status: 'error', message: 'No linked student profile.' });
-
     try {
+        const student_id = req.user.linked_id;
+        if (!student_id) {
+            return res.status(400).json({ status: 'error', message: 'No linked student profile.' });
+        }
         const [rows] = await db.execute(
-            `SELECT e.enrollment_id, e.section_id, e.status, e.grade, e.grade_points,
+            `SELECT e.enrollment_id, e.status, e.grade, e.grade_points, e.enrollment_date,
+                    sec.section_id, sec.semester, sec.year, sec.schedule_days, sec.schedule_time, sec.room,
                     c.course_code, c.name AS course_name, c.credits,
-                    sec.semester, sec.year, sec.schedule_days, sec.schedule_time, sec.room,
-                    CONCAT(i.first_name, ' ', i.last_name) AS instructor_name
+                    CONCAT(i.first_name,' ',i.last_name) AS instructor_name
              FROM enrollment e
              JOIN section sec ON e.section_id = sec.section_id
              JOIN course c ON sec.course_id = c.course_id
              JOIN instructor i ON sec.instructor_id = i.instructor_id
              WHERE e.student_id = ?
-             ORDER BY sec.year DESC, sec.semester DESC`,
+             ORDER BY sec.year DESC, FIELD(sec.semester,'Spring','Summer','Fall'), c.course_code`,
             [student_id]
         );
         res.status(200).json({ status: 'success', data: rows });
-    } catch (error) {
-        res.status(500).json({ status: 'error', message: error.message });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
     }
 };
 

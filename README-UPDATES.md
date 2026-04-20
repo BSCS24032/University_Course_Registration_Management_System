@@ -156,19 +156,4 @@ axios, jwt-decode.
     `trg_after_enrollment_drop_promote` which atomically promotes the top of the
     waitlist and fires a notification row.
 
-## "Complex features" now ticked off the Phase 3 rubric
 
-- Analytics dashboard with charts — AdminDashboard has two SVG charts plus
-  progress bars
-- Advanced search and filtering — Enrollment page: text search across code,
-  name, instructor + term filter + seats filter
-- Real-time updates via polling — NotificationBell polls every 30 seconds
-- PDF/Excel report generation — Transcript: server renders print-ready HTML,
-  browser's Print → Save as PDF produces the file
-
-## What's NOT in this update (deliberate)
-
-- No Tailwind / Material-UI / other CSS frameworks — pure global.css
-- No `recharts` — pure SVG components in `BarChart.jsx` and `LineChart.jsx`
-- No `pdfkit` / `puppeteer` — transcript uses browser print-to-PDF
-- No new database rows in existing tables — migration only adds new ones

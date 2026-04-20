@@ -51,33 +51,35 @@ INSERT INTO instructor (instructor_id, first_name, last_name, email, phone, depa
 
 -- ============================================================================
 -- STUDENTS  (25 rows)
+-- credit_limit: 18 default, 12 for low CGPA (< 2.5), 21 for high performers (> 3.7),
+--               0 for Suspended/Graduated (cannot enroll in new courses)
 -- ============================================================================
-INSERT INTO student (student_id, first_name, last_name, email, phone, dob, gender, address, city, program_id, enrollment_date, current_semester, cgpa, status) VALUES
-(1,  'Ali',      'Ahmad',    'ali.ahmad@stu.ums.edu.pk',      '0321-0000001', '2003-03-15', 'Male',   '12 Gulberg III',          'Lahore',      1, '2022-09-01', 5, 3.45, 'Active'),
-(2,  'Hira',     'Batool',   'hira.batool@stu.ums.edu.pk',    '0321-0000002', '2003-07-22', 'Female', '45 DHA Phase 5',          'Lahore',      1, '2022-09-01', 5, 3.78, 'Active'),
-(3,  'Fahad',    'Mirza',    'fahad.mirza@stu.ums.edu.pk',    '0321-0000003', '2002-11-03', 'Male',   '8 Model Town',            'Lahore',      2, '2022-09-01', 5, 2.90, 'Active'),
-(4,  'Maryam',   'Iqbal',    'maryam.iqbal@stu.ums.edu.pk',   '0321-0000004', '2004-01-30', 'Female', '90 Johar Town',           'Lahore',      1, '2023-09-01', 3, 3.60, 'Active'),
-(5,  'Omar',     'Farooq',   'omar.farooq@stu.ums.edu.pk',    '0321-0000005', '2003-05-18', 'Male',   '23 Cantt Area',           'Rawalpindi',  3, '2022-09-01', 5, 3.10, 'Active'),
-(6,  'Zara',     'Siddiqui', 'zara.siddiqui@stu.ums.edu.pk',  '0321-0000006', '2003-09-10', 'Female', '56 F-8 Markaz',           'Islamabad',   4, '2022-09-01', 5, 3.55, 'Active'),
-(7,  'Danish',   'Hameed',   'danish.hameed@stu.ums.edu.pk',   '0321-0000007', '2002-12-25', 'Male',   '11 Bahria Town',          'Lahore',      3, '2022-09-01', 5, 2.65, 'Active'),
-(8,  'Amna',     'Rashid',   'amna.rashid@stu.ums.edu.pk',    '0321-0000008', '2004-04-14', 'Female', '77 Garden Town',          'Lahore',      2, '2023-09-01', 3, 3.82, 'Active'),
-(9,  'Hamza',    'Sheikh',   'hamza.sheikh@stu.ums.edu.pk',   '0321-0000009', '2001-06-06', 'Male',   '3 Satellite Town',        'Rawalpindi',  5, '2024-02-01', 2, 3.70, 'Active'),
-(10, 'Khadija',  'Anwar',    'khadija.anwar@stu.ums.edu.pk',  '0321-0000010', '2003-08-20', 'Female', '19 Allama Iqbal Town',    'Lahore',      7, '2022-09-01', 5, 3.25, 'Active'),
-(11, 'Saad',     'Butt',     'saad.butt@stu.ums.edu.pk',      '0321-0000011', '2004-02-11', 'Male',   '62 Wapda Town',           'Lahore',      1, '2023-09-01', 3, 3.15, 'Active'),
-(12, 'Noor',     'Fatima',   'noor.fatima@stu.ums.edu.pk',    '0321-0000012', '2003-10-05', 'Female', '28 Iqbal Avenue',         'Lahore',      4, '2022-09-01', 5, 3.90, 'Active'),
-(13, 'Talha',    'Naveed',   'talha.naveed@stu.ums.edu.pk',   '0321-0000013', '2002-01-17', 'Male',   '44 Askari 11',            'Lahore',      6, '2024-02-01', 2, 3.50, 'Active'),
-(14, 'Iqra',     'Zahid',    'iqra.zahid@stu.ums.edu.pk',     '0321-0000014', '2003-12-09', 'Female', '15 Township',             'Lahore',      8, '2022-09-01', 5, 3.35, 'Active'),
-(15, 'Usman',    'Ghani',    'usman.ghani@stu.ums.edu.pk',    '0321-0000015', '2004-06-21', 'Male',   '88 Faisal Town',          'Lahore',      1, '2023-09-01', 3, 2.80, 'Active'),
-(16, 'Mahnoor',  'Akram',    'mahnoor.akram@stu.ums.edu.pk',  '0321-0000016', '2001-03-03', 'Female', '7 Cavalry Ground',        'Lahore',      5, '2024-09-01', 1, 0.00, 'Active'),
-(17, 'Rehan',    'Aziz',     'rehan.aziz@stu.ums.edu.pk',     '0321-0000017', '2000-09-28', 'Male',   '33 Peoples Colony',       'Faisalabad',  1, '2020-09-01', 8, 3.05, 'Graduated'),
-(18, 'Saba',     'Riaz',     'saba.riaz@stu.ums.edu.pk',      '0321-0000018', '2001-11-14', 'Female', '51 Shadman',              'Lahore',      4, '2020-09-01', 8, 3.72, 'Graduated'),
-(19, 'Waqas',    'Javed',    'waqas.javed@stu.ums.edu.pk',    '0321-0000019', '2003-04-07', 'Male',   '14 Samanabad',            'Lahore',      3, '2022-09-01', 5, 1.85, 'Suspended'),
-(20, 'Aisha',    'Parveen',  'aisha.parveen@stu.ums.edu.pk',  '0321-0000020', '2004-08-16', 'Female', '70 Gulshan-e-Ravi',       'Lahore',      1, '2023-09-01', 3, 3.48, 'Active'),
-(21, 'Kashif',   'Mahmood',  'kashif.mahmood@stu.ums.edu.pk', '0321-0000021', '2003-02-02', 'Male',   '26 Muslim Town',          'Lahore',      2, '2022-09-01', 5, 3.20, 'Active'),
-(22, 'Rabia',    'Nawaz',    'rabia.nawaz@stu.ums.edu.pk',     '0321-0000022', '2004-10-19', 'Female', '5 Raiwind Road',          'Lahore',      7, '2023-09-01', 3, 3.00, 'Active'),
-(23, 'Junaid',   'Saleem',   'junaid.saleem@stu.ums.edu.pk',  '0321-0000023', '2003-07-08', 'Male',   '41 Thokar Niaz Baig',     'Lahore',      3, '2022-09-01', 5, 2.55, 'Active'),
-(24, 'Hafsa',    'Tariq',    'hafsa.tariq@stu.ums.edu.pk',    '0321-0000024', '2004-05-25', 'Female', '99 Shad Bagh',            'Lahore',      1, '2023-09-01', 3, 3.65, 'Active'),
-(25, 'Yasir',    'Abbas',    'yasir.abbas@stu.ums.edu.pk',    '0321-0000025', '2003-01-12', 'Male',   '60 Dharampura',           'Lahore',      4, '2022-09-01', 5, 2.95, 'Active');
+INSERT INTO student (student_id, first_name, last_name, email, phone, dob, gender, address, city, program_id, enrollment_date, current_semester, credit_limit, cgpa, status) VALUES
+(1,  'Ali',      'Ahmad',    'ali.ahmad@stu.ums.edu.pk',      '0321-0000001', '2003-03-15', 'Male',   '12 Gulberg III',          'Lahore',      1, '2022-09-01', 5, 18, 3.45, 'Active'),
+(2,  'Hira',     'Batool',   'hira.batool@stu.ums.edu.pk',    '0321-0000002', '2003-07-22', 'Female', '45 DHA Phase 5',          'Lahore',      1, '2022-09-01', 5, 21, 3.78, 'Active'),
+(3,  'Fahad',    'Mirza',    'fahad.mirza@stu.ums.edu.pk',    '0321-0000003', '2002-11-03', 'Male',   '8 Model Town',            'Lahore',      2, '2022-09-01', 5, 15, 2.90, 'Active'),
+(4,  'Maryam',   'Iqbal',    'maryam.iqbal@stu.ums.edu.pk',   '0321-0000004', '2004-01-30', 'Female', '90 Johar Town',           'Lahore',      1, '2023-09-01', 3, 18, 3.60, 'Active'),
+(5,  'Omar',     'Farooq',   'omar.farooq@stu.ums.edu.pk',    '0321-0000005', '2003-05-18', 'Male',   '23 Cantt Area',           'Rawalpindi',  3, '2022-09-01', 5, 18, 3.10, 'Active'),
+(6,  'Zara',     'Siddiqui', 'zara.siddiqui@stu.ums.edu.pk',  '0321-0000006', '2003-09-10', 'Female', '56 F-8 Markaz',           'Islamabad',   4, '2022-09-01', 5, 18, 3.55, 'Active'),
+(7,  'Danish',   'Hameed',   'danish.hameed@stu.ums.edu.pk',   '0321-0000007', '2002-12-25', 'Male',   '11 Bahria Town',          'Lahore',      3, '2022-09-01', 5, 12, 2.65, 'Active'),
+(8,  'Amna',     'Rashid',   'amna.rashid@stu.ums.edu.pk',    '0321-0000008', '2004-04-14', 'Female', '77 Garden Town',          'Lahore',      2, '2023-09-01', 3, 21, 3.82, 'Active'),
+(9,  'Hamza',    'Sheikh',   'hamza.sheikh@stu.ums.edu.pk',   '0321-0000009', '2001-06-06', 'Male',   '3 Satellite Town',        'Rawalpindi',  5, '2024-02-01', 2, 15, 3.70, 'Active'),
+(10, 'Khadija',  'Anwar',    'khadija.anwar@stu.ums.edu.pk',  '0321-0000010', '2003-08-20', 'Female', '19 Allama Iqbal Town',    'Lahore',      7, '2022-09-01', 5, 18, 3.25, 'Active'),
+(11, 'Saad',     'Butt',     'saad.butt@stu.ums.edu.pk',      '0321-0000011', '2004-02-11', 'Male',   '62 Wapda Town',           'Lahore',      1, '2023-09-01', 3, 18, 3.15, 'Active'),
+(12, 'Noor',     'Fatima',   'noor.fatima@stu.ums.edu.pk',    '0321-0000012', '2003-10-05', 'Female', '28 Iqbal Avenue',         'Lahore',      4, '2022-09-01', 5, 21, 3.90, 'Active'),
+(13, 'Talha',    'Naveed',   'talha.naveed@stu.ums.edu.pk',   '0321-0000013', '2002-01-17', 'Male',   '44 Askari 11',            'Lahore',      6, '2024-02-01', 2, 15, 3.50, 'Active'),
+(14, 'Iqra',     'Zahid',    'iqra.zahid@stu.ums.edu.pk',     '0321-0000014', '2003-12-09', 'Female', '15 Township',             'Lahore',      8, '2022-09-01', 5, 18, 3.35, 'Active'),
+(15, 'Usman',    'Ghani',    'usman.ghani@stu.ums.edu.pk',    '0321-0000015', '2004-06-21', 'Male',   '88 Faisal Town',          'Lahore',      1, '2023-09-01', 3, 12, 2.80, 'Active'),
+(16, 'Mahnoor',  'Akram',    'mahnoor.akram@stu.ums.edu.pk',  '0321-0000016', '2001-03-03', 'Female', '7 Cavalry Ground',        'Lahore',      5, '2024-09-01', 1, 12, 0.00, 'Active'),
+(17, 'Rehan',    'Aziz',     'rehan.aziz@stu.ums.edu.pk',     '0321-0000017', '2000-09-28', 'Male',   '33 Peoples Colony',       'Faisalabad',  1, '2020-09-01', 8, 0,  3.05, 'Graduated'),
+(18, 'Saba',     'Riaz',     'saba.riaz@stu.ums.edu.pk',      '0321-0000018', '2001-11-14', 'Female', '51 Shadman',              'Lahore',      4, '2020-09-01', 8, 0,  3.72, 'Graduated'),
+(19, 'Waqas',    'Javed',    'waqas.javed@stu.ums.edu.pk',    '0321-0000019', '2003-04-07', 'Male',   '14 Samanabad',            'Lahore',      3, '2022-09-01', 5, 0,  1.85, 'Suspended'),
+(20, 'Aisha',    'Parveen',  'aisha.parveen@stu.ums.edu.pk',  '0321-0000020', '2004-08-16', 'Female', '70 Gulshan-e-Ravi',       'Lahore',      1, '2023-09-01', 3, 18, 3.48, 'Active'),
+(21, 'Kashif',   'Mahmood',  'kashif.mahmood@stu.ums.edu.pk', '0321-0000021', '2003-02-02', 'Male',   '26 Muslim Town',          'Lahore',      2, '2022-09-01', 5, 18, 3.20, 'Active'),
+(22, 'Rabia',    'Nawaz',    'rabia.nawaz@stu.ums.edu.pk',     '0321-0000022', '2004-10-19', 'Female', '5 Raiwind Road',          'Lahore',      7, '2023-09-01', 3, 18, 3.00, 'Active'),
+(23, 'Junaid',   'Saleem',   'junaid.saleem@stu.ums.edu.pk',  '0321-0000023', '2003-07-08', 'Male',   '41 Thokar Niaz Baig',     'Lahore',      3, '2022-09-01', 5, 12, 2.55, 'Active'),
+(24, 'Hafsa',    'Tariq',    'hafsa.tariq@stu.ums.edu.pk',    '0321-0000024', '2004-05-25', 'Female', '99 Shad Bagh',            'Lahore',      1, '2023-09-01', 3, 18, 3.65, 'Active'),
+(25, 'Yasir',    'Abbas',    'yasir.abbas@stu.ums.edu.pk',    '0321-0000025', '2003-01-12', 'Male',   '60 Dharampura',           'Lahore',      4, '2022-09-01', 5, 18, 2.95, 'Active');
 
 -- ============================================================================
 -- COURSES  (15 rows)
@@ -109,6 +111,34 @@ INSERT INTO course_prerequisite (course_id, prerequisite_id) VALUES
 (5,  2),   -- OS requires DS&A
 (14, 2),   -- ML requires DS&A
 (7,  6);   -- DLD requires Circuit Analysis
+
+-- ============================================================================
+-- PROGRAM_COURSE  (which courses each program may enroll in)
+-- Structured so existing seeded enrollments remain valid.
+-- ============================================================================
+INSERT INTO program_course (program_id, course_id, is_core, suggested_sem) VALUES
+-- Program 1: BS Computer Science
+(1, 1,  TRUE,  1), (1, 2,  TRUE,  3), (1, 3,  TRUE,  4), (1, 4,  TRUE,  6),
+(1, 5,  TRUE,  5), (1, 10, TRUE,  1), (1, 11, TRUE,  2), (1, 12, TRUE,  2),
+(1, 13, TRUE,  3), (1, 14, FALSE, 7), (1, 15, FALSE, 7),
+-- Program 2: BS Software Engineering
+(2, 1,  TRUE,  1), (2, 2,  TRUE,  3), (2, 3,  TRUE,  4), (2, 4,  TRUE,  5),
+(2, 5,  TRUE,  6), (2, 10, TRUE,  1), (2, 12, TRUE,  2), (2, 14, FALSE, 7),
+(2, 15, FALSE, 7),
+-- Program 3: BS Electrical Engineering
+(3, 2,  FALSE, 4), (3, 3,  FALSE, 5), (3, 6,  TRUE,  1), (3, 7,  TRUE,  3),
+(3, 10, TRUE,  1), (3, 11, TRUE,  2), (3, 12, TRUE,  2), (3, 13, TRUE,  2),
+-- Program 4: BS Business Administration
+(4, 8,  TRUE,  1), (4, 9,  TRUE,  2), (4, 10, TRUE,  1), (4, 12, TRUE,  2),
+-- Program 5: MS Computer Science
+(5, 3,  TRUE,  1), (5, 4,  TRUE,  2), (5, 14, FALSE, 2), (5, 15, FALSE, 2),
+-- Program 6: MS Data Science
+(6, 2,  TRUE,  1), (6, 3,  TRUE,  1), (6, 14, TRUE,  2), (6, 15, FALSE, 2),
+-- Program 7: BS Mathematics
+(7, 1,  FALSE, 1), (7, 10, TRUE,  1), (7, 11, TRUE,  2), (7, 12, TRUE,  2),
+(7, 13, FALSE, 3),
+-- Program 8: BS English Literature
+(8, 1,  FALSE, 1), (8, 12, TRUE,  1);
 
 -- ============================================================================
 -- SECTIONS  (18 rows)
@@ -407,13 +437,53 @@ INSERT INTO hostel_allocation (allocation_id, student_id, room_id, alloc_date, v
 (12, 19, 13, '2025-08-20', '2025-10-01', 'Vacated');  -- suspended student vacated
 
 -- ============================================================================
--- USERS  (4 seed accounts — password for all: Admin@123)
+-- USERS  (41 seed accounts — password for ALL is: Admin@123)
+-- Every instructor and every student now has a login account.
+-- Hash below is bcrypt with 12 rounds of the password "Admin@123".
 -- ============================================================================
 INSERT INTO users (user_id, email, password_hash, role, linked_id) VALUES
-(1, 'admin@ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Admin',      NULL),
-(2, 'ahmed.khan@ums.edu.pk', '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 1),
-(3, 'ali.ahmad@stu.ums.edu.pk','$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',  1),
-(4, 'librarian@ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Librarian',  NULL);
+-- Admin & Librarian (no linked_id)
+(1,  'admin@ums.edu.pk',              '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Admin',      NULL),
+(2,  'librarian@ums.edu.pk',          '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Librarian',  NULL),
+-- Instructors (linked_id = instructor_id, 1..12)
+(3,  'ahmed.khan@ums.edu.pk',         '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 1),
+(4,  'sara.ali@ums.edu.pk',           '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 2),
+(5,  'usman.tariq@ums.edu.pk',        '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 3),
+(6,  'fatima.noor@ums.edu.pk',        '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 4),
+(7,  'hassan.raza@ums.edu.pk',        '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 5),
+(8,  'ayesha.malik@ums.edu.pk',       '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 6),
+(9,  'bilal.hussain@ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 7),
+(10, 'zainab.shah@ums.edu.pk',        '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 8),
+(11, 'imran.qureshi@ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 9),
+(12, 'nadia.jamil@ums.edu.pk',        '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 10),
+(13, 'tariq.mehmood@ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 11),
+(14, 'sana.aslam@ums.edu.pk',         '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Instructor', 12),
+-- Students (linked_id = student_id, 1..25)
+(15, 'ali.ahmad@stu.ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    1),
+(16, 'hira.batool@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    2),
+(17, 'fahad.mirza@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    3),
+(18, 'maryam.iqbal@stu.ums.edu.pk',   '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    4),
+(19, 'omar.farooq@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    5),
+(20, 'zara.siddiqui@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    6),
+(21, 'danish.hameed@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    7),
+(22, 'amna.rashid@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    8),
+(23, 'hamza.sheikh@stu.ums.edu.pk',   '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    9),
+(24, 'khadija.anwar@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    10),
+(25, 'saad.butt@stu.ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    11),
+(26, 'noor.fatima@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    12),
+(27, 'talha.naveed@stu.ums.edu.pk',   '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    13),
+(28, 'iqra.zahid@stu.ums.edu.pk',     '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    14),
+(29, 'usman.ghani@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    15),
+(30, 'mahnoor.akram@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    16),
+(31, 'rehan.aziz@stu.ums.edu.pk',     '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    17),
+(32, 'saba.riaz@stu.ums.edu.pk',      '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    18),
+(33, 'waqas.javed@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    19),
+(34, 'aisha.parveen@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    20),
+(35, 'kashif.mahmood@stu.ums.edu.pk', '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    21),
+(36, 'rabia.nawaz@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    22),
+(37, 'junaid.saleem@stu.ums.edu.pk',  '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    23),
+(38, 'hafsa.tariq@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    24),
+(39, 'yasir.abbas@stu.ums.edu.pk',    '$2b$12$.xlXLETCMzPf6f2bJLL4H.myGVJyo9qbrfSfW7J18Ar3svpaQy6VC', 'Student',    25);
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -426,6 +496,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- student:            25
 -- course:             15
 -- course_prerequisite: 6
+-- program_course:     43
 -- section:            18
 -- enrollment:         50
 -- attendance:         30
@@ -437,7 +508,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- hostel:              3
 -- hostel_room:        15
 -- hostel_allocation:  12
--- users:               4
+-- users:              39   (1 admin + 1 librarian + 12 instructors + 25 students)
 -- --------------------------------
--- GRAND TOTAL:       279 records
+-- GRAND TOTAL:       357 records
 -- ============================================================================

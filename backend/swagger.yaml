@@ -2,10 +2,12 @@ openapi: 3.0.0
 info:
   title: University Management System API
   description: |
-    Phase 2 API for the University Management System. Implements JWT authentication,
+    Phase 2/3 API for the University Management System. Implements JWT authentication,
     RBAC for 4 roles (Admin, Instructor, Student, Librarian), and ACID-compliant
     transactions using raw parameterized SQL on MySQL 8.0+.
-  version: 2.0.0
+
+    All endpoints (except /auth/*) require a Bearer JWT in the Authorization header.
+  version: 3.0.0
 
 servers:
   - url: http://localhost:5000/api/v1
@@ -23,56 +25,40 @@ components:
     ErrorResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: error
-        message:
-          type: string
-
+        status: { type: string, example: error }
+        message: { type: string }
     SuccessResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: success
-        message:
-          type: string
+        status: { type: string, example: success }
+        message: { type: string }
+        data: { type: object }
 
 security:
   - bearerAuth: []
 
-paths:
-  /health:
-    get:
-      summary: Health Check
-      description: Returns the status of the API. No authentication required.
-      tags: [System]
-      security: []
-      responses:
-        '200':
-          description: API is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: "University Management System API is running!"
+tags:
+  - name: Auth
+  - name: Courses
+  - name: Enrollment
+  - name: Fees
+  - name: Attendance
+  - name: Assignments
+  - name: Submissions
+  - name: Grades
+  - name: Books
+  - name: Book Issues
+  - name: Admin
+  - name: Hostels
+  - name: Instructors
+  - name: Students
 
+paths:
   /auth/register:
     post:
-      summary: Register a new user
-      description: |
-        Creates a new user account. Without a token, the role defaults to Student.
-        To create Admin, Instructor, or Librarian accounts, include an Admin's JWT token.
-      tags: [Authentication]
-      security:
-        - {}
-        - bearerAuth: []
+      tags: [Auth]
+      summary: Register a new user (defaults to Student; Admin token required for elevated roles)
+      security: []
       requestBody:
         required: true
         content:
@@ -81,49 +67,16 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email:
-                  type: string
-                  format: email
-                  example: newstudent@stu.ums.edu.pk
-                password:
-                  type: string
-                  minLength: 8
-                  example: MyPassword123
-                role:
-                  type: string
-                  enum: [Admin, Instructor, Student, Librarian]
-                  description: "Ignored unless request includes an Admin token. Defaults to Student."
-                  example: Student
+                email: { type: string }
+                password: { type: string, minLength: 8 }
+                role: { type: string, enum: [Student, Instructor, Librarian, Admin] }
       responses:
-        '201':
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: User registered successfully.
-                  userId:
-                    type: integer
-                    example: 5
-                  role:
-                    type: string
-                    example: Student
-        '400':
-          description: User already exists or password too short
-        '403':
-          description: Only Admins can create elevated-role accounts
+        '201': { description: Registered }
 
   /auth/login:
     post:
-      summary: Login
-      description: Authenticates a user and returns a JWT token valid for 24 hours.
-      tags: [Authentication]
+      tags: [Auth]
+      summary: Login, returns JWT token
       security: []
       requestBody:
         required: true
@@ -133,141 +86,49 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email:
-                  type: string
-                  example: admin@ums.edu.pk
-                password:
-                  type: string
-                  example: Admin@123
+                email: { type: string }
+                password: { type: string }
       responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Logged in successfully.
-                  token:
-                    type: string
-                    description: JWT token (include as Bearer token in subsequent requests)
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      email:
-                        type: string
-                        example: admin@ums.edu.pk
-                      role:
-                        type: string
-                        example: Admin
-                      linked_id:
-                        type: integer
-                        nullable: true
-                        example: null
-        '401':
-          description: Invalid credentials
-        '403':
-          description: Account deactivated
+        '200': { description: Authenticated, returns token and user info }
 
   /courses:
     get:
-      summary: List all courses
-      description: Returns all courses from the catalogue. Requires authentication.
       tags: [Courses]
+      summary: List all courses
       responses:
-        '200':
-          description: List of courses
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  results:
-                    type: integer
-                    example: 15
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        course_id:
-                          type: integer
-                        course_code:
-                          type: string
-                          example: CS301
-                        name:
-                          type: string
-                          example: Database Systems
-                        credits:
-                          type: integer
-                          example: 3
-                        department_id:
-                          type: integer
-                        is_elective:
-                          type: boolean
-        '401':
-          description: No valid token provided
+        '200': { description: OK }
 
   /courses/sections:
     get:
-      summary: List all sections
-      description: Returns all sections with course name, capacity, and enrollment count.
       tags: [Courses]
+      summary: List all sections with course and instructor info
       responses:
-        '200':
-          description: List of sections
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        section_id:
-                          type: integer
-                        section_name:
-                          type: string
-                          example: "Fall 2025"
-                        capacity:
-                          type: integer
-                        enrolled_count:
-                          type: integer
-                        course_name:
-                          type: string
-        '401':
-          description: No valid token provided
+        '200': { description: OK }
+
+  /courses/eligible:
+    get:
+      tags: [Courses]
+      summary: Courses the logged-in student's program allows (Student only)
+      responses:
+        '200': { description: OK }
+        '403': { description: Not a student }
+
+  /courses/{course_id}/prerequisites:
+    get:
+      tags: [Courses]
+      summary: List prerequisites for a course
+      parameters:
+        - { in: path, name: course_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
 
   /enrollment:
     post:
-      summary: Enroll in a section (ACID Transaction)
-      description: |
-        Enrolls a student in a course section using a full ACID transaction:
-        1. Locks the section row with FOR UPDATE
-        2. Checks capacity
-        3. Checks for duplicate enrollment
-        4. Verifies all prerequisites are completed
-        5. Inserts enrollment record (trigger updates enrolled_count)
-        
-        Students can only enroll themselves (ownership check via linked_id).
-        Admins can enroll any student.
       tags: [Enrollment]
+      summary: Enroll a student in a section (ACID transaction)
+      description: |
+        Enforces capacity, duplicate-prevention, program-course eligibility,
+        credit-hour limit, and prerequisite completion — all inside one transaction.
       requestBody:
         required: true
         content:
@@ -276,92 +137,39 @@ paths:
               type: object
               required: [student_id, section_id]
               properties:
-                student_id:
-                  type: integer
-                  example: 1
-                section_id:
-                  type: integer
-                  example: 17
+                student_id: { type: integer }
+                section_id: { type: integer }
       responses:
-        '201':
-          description: Student enrolled successfully (Transaction Committed)
-        '400':
-          description: |
-            Transaction rolled back. Possible reasons:
-            - Section not found
-            - Section at full capacity
-            - Already enrolled
-            - Missing prerequisites
-        '401':
-          description: No valid token provided
-        '403':
-          description: Access denied (wrong role or student trying to enroll someone else)
+        '201': { description: Enrolled }
+        '400': { description: Validation failure (rolled back) }
+
+  /enrollment/my:
+    get:
+      tags: [Enrollment]
+      summary: Logged-in student's enrollment history
+      responses:
+        '200': { description: OK }
+
+  /enrollment/{enrollment_id}/drop:
+    patch:
+      tags: [Enrollment]
+      summary: Drop an enrollment (trigger decrements section count)
+      parameters:
+        - { in: path, name: enrollment_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Dropped }
 
   /fees/my-fees:
     get:
-      summary: View own fee records
-      description: Returns all fee records for the authenticated student (matched via linked_id in JWT).
       tags: [Fees]
-      security:
-        - bearerAuth: []
+      summary: Logged-in student's fee vouchers
       responses:
-        '200':
-          description: Fee records retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        fee_id:
-                          type: integer
-                        student_id:
-                          type: integer
-                        semester:
-                          type: string
-                          example: Fall
-                        year:
-                          type: integer
-                          example: 2025
-                        total_amount:
-                          type: number
-                          example: 185000
-                        paid_amount:
-                          type: number
-                          example: 100000
-                        balance_due:
-                          type: number
-                          example: 85000
-                        payment_status:
-                          type: string
-                          enum: [Pending, Partial, Paid, Overdue]
-        '401':
-          description: No valid token provided
-        '403':
-          description: Only Students can access this endpoint
+        '200': { description: OK }
 
   /fees/pay:
     post:
-      summary: Process a fee payment (ACID Transaction)
-      description: |
-        Processes a fee payment using a full ACID transaction:
-        1. Locks the fee row with FOR UPDATE
-        2. Validates fee exists and is not already paid
-        3. Uses integer arithmetic to avoid float equality bugs
-        4. Prevents overpayment
-        5. Updates paid_amount and status
-        
-        Students can only pay their own fees (ownership check via linked_id).
       tags: [Fees]
-      security:
-        - bearerAuth: []
+      summary: Pay (fully or partially) a fee voucher (ACID transaction)
       requestBody:
         required: true
         content:
@@ -370,56 +178,15 @@ paths:
               type: object
               required: [fee_id, payment_amount]
               properties:
-                fee_id:
-                  type: integer
-                  example: 3
-                payment_amount:
-                  type: number
-                  format: float
-                  example: 50000
+                fee_id: { type: integer }
+                payment_amount: { type: number }
       responses:
-        '200':
-          description: Payment processed successfully (Transaction Committed)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      fee_id:
-                        type: integer
-                      new_paid_amount:
-                        type: number
-                      status:
-                        type: string
-                        enum: [Partial, Paid]
-        '400':
-          description: |
-            Transaction rolled back. Possible reasons:
-            - Fee voucher not found
-            - Already fully paid
-            - Overpayment attempted
-            - Student trying to pay another student's fee
-        '401':
-          description: No valid token provided
+        '200': { description: Payment processed }
 
   /attendance:
     post:
-      summary: Mark attendance (Instructor only)
-      description: |
-        Marks attendance for multiple students in a section. Uses a transaction to
-        ensure all records are inserted atomically. Looks up enrollment_id from
-        student_id + section_id automatically.
       tags: [Attendance]
-      security:
-        - bearerAuth: []
+      summary: Mark attendance for a section (Instructor)
       requestBody:
         required: true
         content:
@@ -428,89 +195,398 @@ paths:
               type: object
               required: [section_id, date, records]
               properties:
-                section_id:
-                  type: integer
-                  example: 1
-                date:
-                  type: string
-                  format: date
-                  example: "2026-04-19"
+                section_id: { type: integer }
+                date: { type: string, format: date }
                 records:
                   type: array
                   items:
                     type: object
-                    required: [student_id, status]
                     properties:
-                      student_id:
-                        type: integer
-                        example: 4
-                      status:
-                        type: string
-                        enum: [Present, Absent, Late, Excused]
-                        example: Present
+                      student_id: { type: integer }
+                      status: { type: string, enum: [Present, Absent, Late, Excused] }
       responses:
-        '201':
-          description: Attendance marked successfully
-        '400':
-          description: Invalid data or student not enrolled in section
-        '401':
-          description: No valid token provided
-        '403':
-          description: Only Instructors can mark attendance
+        '201': { description: Marked }
 
   /attendance/my-records:
     get:
-      summary: View own attendance (Student only)
-      description: Returns all attendance records for the authenticated student with course information.
       tags: [Attendance]
-      security:
-        - bearerAuth: []
+      summary: Logged-in student's attendance history
       responses:
-        '200':
-          description: Attendance records retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        attendance_date:
-                          type: string
-                          format: date
-                        status:
-                          type: string
-                          enum: [Present, Absent, Late, Excused]
-                        course_code:
-                          type: string
-                        course_name:
-                          type: string
-                        semester:
-                          type: string
-                        year:
-                          type: integer
-        '401':
-          description: No valid token provided
-        '403':
-          description: Only Students can access this endpoint
+        '200': { description: OK }
 
-  /admin/dashboard:
-    get:
-      summary: Admin Dashboard
-      description: Protected admin-only endpoint. Returns a welcome message.
-      tags: [Admin]
-      security:
-        - bearerAuth: []
+  /assignments:
+    post:
+      tags: [Assignments]
+      summary: Create an assignment (Instructor — for sections they teach)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [section_id, title, max_marks, weightage, due_date]
+              properties:
+                section_id: { type: integer }
+                title: { type: string }
+                description: { type: string }
+                max_marks: { type: number }
+                weightage: { type: number, description: "Percentage weight toward final grade" }
+                due_date: { type: string, format: date-time }
       responses:
-        '200':
-          description: Admin dashboard data
-        '401':
-          description: No valid token provided
-        '403':
-          description: Only Admins can access this endpoint
+        '201': { description: Created }
+
+  /assignments/section/{section_id}:
+    get:
+      tags: [Assignments]
+      summary: List assignments for a section
+      parameters:
+        - { in: path, name: section_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /assignments/my:
+    get:
+      tags: [Assignments]
+      summary: All assignments across a student's enrolled sections
+      responses:
+        '200': { description: OK }
+
+  /assignments/{assignment_id}:
+    delete:
+      tags: [Assignments]
+      summary: Delete an assignment (Instructor/Admin)
+      parameters:
+        - { in: path, name: assignment_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Deleted }
+
+  /submissions:
+    post:
+      tags: [Submissions]
+      summary: Submit work to an assignment (Student)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignment_id]
+              properties:
+                assignment_id: { type: integer }
+      responses:
+        '201': { description: Submitted; server computes is_late }
+
+  /submissions/{submission_id}/grade:
+    put:
+      tags: [Submissions]
+      summary: Grade a submission (Instructor)
+      parameters:
+        - { in: path, name: submission_id, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [marks_obtained]
+              properties:
+                marks_obtained: { type: number }
+                feedback: { type: string }
+      responses:
+        '200': { description: Graded }
+
+  /submissions/assignment/{assignment_id}:
+    get:
+      tags: [Submissions]
+      summary: List submissions for an assignment (Instructor)
+      parameters:
+        - { in: path, name: assignment_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /grades/assign:
+    post:
+      tags: [Grades]
+      summary: Assign a single letter grade to an enrollment (Instructor, recalculates CGPA)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enrollment_id, grade]
+              properties:
+                enrollment_id: { type: integer }
+                grade: { type: string, example: "A" }
+      responses:
+        '200': { description: Grade assigned, CGPA recalculated }
+
+  /grades/apply-threshold:
+    post:
+      tags: [Grades]
+      summary: Bulk-assign grades for a section using cutoff thresholds (Instructor, ACID)
+      description: |
+        Computes each student's weighted percentage across all section assignments
+        (using submission.marks_obtained and assignment.weightage), maps the
+        percentage to a letter grade using the provided cutoffs, and updates
+        enrollment.grade + enrollment.grade_points + student.cgpa inside one
+        transaction.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [section_id, thresholds]
+              properties:
+                section_id: { type: integer }
+                thresholds:
+                  type: object
+                  example: { "A+": 95, "A": 90, "B+": 85, "B": 80, "C": 70, "D": 60, "F": 0 }
+      responses:
+        '200': { description: Grades applied }
+
+  /grades/sections/{section_id}/average:
+    get:
+      tags: [Grades]
+      summary: Average grade-points for a section
+      parameters:
+        - { in: path, name: section_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /grades/sections/{section_id}/grade-sheet:
+    get:
+      tags: [Grades]
+      summary: Every student in a section with their grade
+      parameters:
+        - { in: path, name: section_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /grades/courses/{course_id}/average:
+    get:
+      tags: [Grades]
+      summary: Average grade-points across every section of a course
+      parameters:
+        - { in: path, name: course_id, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+
+  /books:
+    get:
+      tags: [Books]
+      summary: Browse the library catalogue
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Books]
+      summary: Add a book to the catalogue (Librarian)
+      responses: { '201': { description: Created } }
+
+  /books/{book_id}:
+    get:
+      tags: [Books]
+      summary: Book detail
+      parameters: [{ in: path, name: book_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Books]
+      summary: Update book metadata or copy count (Librarian)
+      parameters: [{ in: path, name: book_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Updated } }
+    delete:
+      tags: [Books]
+      summary: Remove a book (Librarian)
+      parameters: [{ in: path, name: book_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Deleted } }
+
+  /book-issues:
+    get:
+      tags: [Book Issues]
+      summary: All book issues (Librarian). ?active=true filters to not-yet-returned.
+      parameters: [{ in: query, name: active, schema: { type: boolean } }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Book Issues]
+      summary: Issue a book to a student (ACID — trigger decrements available_copies)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [book_id, student_id]
+              properties:
+                book_id: { type: integer }
+                student_id: { type: integer }
+                due_days: { type: integer, default: 14 }
+      responses: { '201': { description: Issued } }
+
+  /book-issues/{issue_id}/return:
+    patch:
+      tags: [Book Issues]
+      summary: Mark a book returned (trigger auto-calculates fine if overdue)
+      parameters: [{ in: path, name: issue_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Returned } }
+
+  /book-issues/my:
+    get:
+      tags: [Book Issues]
+      summary: Logged-in student's borrowing history
+      responses: { '200': { description: OK } }
+
+  /admin/stats:
+    get:
+      tags: [Admin]
+      summary: Dashboard aggregate statistics
+      responses: { '200': { description: OK } }
+
+  /admin/departments:
+    get: { tags: [Admin], summary: List departments, responses: { '200': { description: OK } } }
+    post: { tags: [Admin], summary: Create department, responses: { '201': { description: Created } } }
+  /admin/departments/{id}:
+    put:
+      tags: [Admin]
+      summary: Update department
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Delete department
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+
+  /admin/programs:
+    get: { tags: [Admin], summary: List programs, responses: { '200': { description: OK } } }
+    post: { tags: [Admin], summary: Create program, responses: { '201': { description: Created } } }
+  /admin/programs/{id}:
+    delete:
+      tags: [Admin]
+      summary: Delete program
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+
+  /admin/program-courses:
+    post:
+      tags: [Admin]
+      summary: Add a course to a program (controls student eligibility)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [program_id, course_id]
+              properties:
+                program_id: { type: integer }
+                course_id: { type: integer }
+                is_core: { type: boolean }
+                suggested_sem: { type: integer }
+      responses: { '201': { description: Added } }
+
+  /admin/program-courses/{program_id}/{course_id}:
+    delete:
+      tags: [Admin]
+      summary: Remove a course from a program
+      parameters:
+        - { in: path, name: program_id, required: true, schema: { type: integer } }
+        - { in: path, name: course_id, required: true, schema: { type: integer } }
+      responses: { '200': { description: OK } }
+
+  /admin/instructors:
+    get: { tags: [Admin], summary: List instructors, responses: { '200': { description: OK } } }
+    post: { tags: [Admin], summary: Create instructor, responses: { '201': { description: Created } } }
+  /admin/instructors/{id}:
+    put:
+      tags: [Admin]
+      summary: Update instructor
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+
+  /admin/students:
+    get: { tags: [Admin], summary: List all students, responses: { '200': { description: OK } } }
+  /admin/students/{id}:
+    get:
+      tags: [Admin]
+      summary: Get a student's full record
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Update student
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+
+  /admin/students/{id}/credit-limit:
+    patch:
+      tags: [Admin]
+      summary: Override a student's per-semester credit-hour limit
+      parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credit_limit]
+              properties:
+                credit_limit: { type: integer, minimum: 0, maximum: 30 }
+      responses: { '200': { description: OK } }
+
+  /hostels:
+    get: { tags: [Hostels], summary: List hostels, responses: { '200': { description: OK } } }
+  /hostels/rooms:
+    get: { tags: [Hostels], summary: List rooms, responses: { '200': { description: OK } } }
+  /hostels/allocations:
+    get: { tags: [Hostels], summary: List allocations, responses: { '200': { description: OK } } }
+    post:
+      tags: [Hostels]
+      summary: Allocate a room to a student (ACID — updates occupancy atomically)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, room_id]
+              properties:
+                student_id: { type: integer }
+                room_id: { type: integer }
+      responses: { '201': { description: Allocated } }
+  /hostels/allocations/{allocation_id}/vacate:
+    patch:
+      tags: [Hostels]
+      summary: Vacate a room (ACID)
+      parameters: [{ in: path, name: allocation_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: Vacated } }
+
+  /instructors/me/sections:
+    get:
+      tags: [Instructors]
+      summary: Sections the logged-in instructor teaches
+      responses: { '200': { description: OK } }
+
+  /instructors/sections/{section_id}/roster:
+    get:
+      tags: [Instructors]
+      summary: Roster for a section
+      parameters: [{ in: path, name: section_id, required: true, schema: { type: integer } }]
+      responses: { '200': { description: OK } }
+
+  /students/me/transcript:
+    get:
+      tags: [Students]
+      summary: Logged-in student's transcript (via Phase-1 view)
+      responses: { '200': { description: OK } }
+
+  /students/me/credit-load:
+    get:
+      tags: [Students]
+      summary: Current credit load + remaining credits vs credit_limit
+      responses: { '200': { description: OK } }
+
+  /students/me/profile:
+    get:
+      tags: [Students]
+      summary: Logged-in student's full profile
+      responses: { '200': { description: OK } }

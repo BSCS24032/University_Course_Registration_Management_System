@@ -86,6 +86,7 @@ CREATE TABLE student (
     program_id      INT             NOT NULL,
     enrollment_date DATE            NOT NULL,
     current_semester TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    credit_limit    TINYINT UNSIGNED NOT NULL DEFAULT 18 COMMENT 'Max credit hours per semester. Admin can override per student.',
     cgpa            DECIMAL(3,2)    NOT NULL DEFAULT 0.00,
     status          ENUM('Active','Graduated','Suspended','Withdrawn','On Leave') NOT NULL DEFAULT 'Active',
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -95,7 +96,8 @@ CREATE TABLE student (
         REFERENCES program(program_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT chk_student_cgpa     CHECK (cgpa BETWEEN 0.00 AND 4.00),
-    CONSTRAINT chk_student_semester CHECK (current_semester BETWEEN 1 AND 16)
+    CONSTRAINT chk_student_semester CHECK (current_semester BETWEEN 1 AND 16),
+    CONSTRAINT chk_student_credit_limit CHECK (credit_limit BETWEEN 0 AND 30)
 ) ENGINE=InnoDB;
 
 -- ============================================================================
@@ -134,6 +136,24 @@ CREATE TABLE course_prerequisite (
     -- NOTE: Self-referencing check (course_id <> prerequisite_id) is enforced
     -- via trigger below, because MySQL 8.0 does not allow CHECK constraints
     -- on columns used in FK referential actions (Error 3823).
+) ENGINE=InnoDB;
+
+-- ============================================================================
+-- 6B. PROGRAM_COURSE  (which courses belong to which program)
+-- Used to enforce that students can only enroll in courses from their program.
+-- ============================================================================
+CREATE TABLE program_course (
+    program_id      INT             NOT NULL,
+    course_id       INT             NOT NULL,
+    is_core         BOOLEAN         NOT NULL DEFAULT TRUE COMMENT 'core (required) vs elective',
+    suggested_sem   TINYINT UNSIGNED DEFAULT NULL COMMENT 'suggested semester order',
+    CONSTRAINT pk_program_course        PRIMARY KEY (program_id, course_id),
+    CONSTRAINT fk_pc_program            FOREIGN KEY (program_id)
+        REFERENCES program(program_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_pc_course             FOREIGN KEY (course_id)
+        REFERENCES course(course_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ============================================================================
@@ -404,6 +424,8 @@ CREATE INDEX idx_book_issue_book        ON book_issue(book_id);
 CREATE INDEX idx_hostel_alloc_student   ON hostel_allocation(student_id);
 CREATE INDEX idx_hostel_alloc_status    ON hostel_allocation(status);
 
+CREATE INDEX idx_program_course_course  ON program_course(course_id);
+
 -- ============================================================================
 -- VIEWS
 -- ============================================================================
@@ -460,6 +482,38 @@ SELECT
     f.due_date
 FROM student s
 JOIN fee f ON s.student_id = f.student_id;
+
+-- VIEW 4: Courses each student is eligible to enroll in (based on their program)
+CREATE OR REPLACE VIEW vw_student_eligible_courses AS
+SELECT
+    s.student_id,
+    CONCAT(s.first_name, ' ', s.last_name)  AS student_name,
+    s.program_id,
+    p.name                                    AS program_name,
+    c.course_id,
+    c.course_code,
+    c.name                                    AS course_name,
+    c.credits,
+    pc.is_core,
+    pc.suggested_sem
+FROM student s
+JOIN program p          ON s.program_id   = p.program_id
+JOIN program_course pc  ON s.program_id   = pc.program_id
+JOIN course c           ON pc.course_id   = c.course_id;
+
+-- VIEW 5: Current credit load per student (sum of credits of Enrolled rows)
+CREATE OR REPLACE VIEW vw_student_current_credits AS
+SELECT
+    s.student_id,
+    CONCAT(s.first_name, ' ', s.last_name)  AS student_name,
+    s.credit_limit,
+    COALESCE(SUM(c.credits), 0)              AS current_credits,
+    (s.credit_limit - COALESCE(SUM(c.credits), 0)) AS credits_remaining
+FROM student s
+LEFT JOIN enrollment e  ON s.student_id   = e.student_id AND e.status = 'Enrolled'
+LEFT JOIN section sec   ON e.section_id   = sec.section_id
+LEFT JOIN course c      ON sec.course_id  = c.course_id
+GROUP BY s.student_id, s.first_name, s.last_name, s.credit_limit;
 
 -- ============================================================================
 -- TRIGGERS

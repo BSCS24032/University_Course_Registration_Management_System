@@ -1,14 +1,14 @@
-# University Management System — Backend API (Phase 2)
+# University Management System — Backend API (Phase 2 / Phase 3)
 
-A RESTful API for a University Management System built with Node.js, Express.js, and MySQL. Implements JWT-based authentication, role-based access control (RBAC) for 4 roles, and ACID-compliant database transactions using raw parameterized SQL.
+RESTful API for a University Management System built with Node.js, Express, and MySQL. Uses JWT authentication, RBAC across four roles (Admin, Instructor, Student, Librarian), raw parameterized SQL (no ORM), and ACID transactions for every critical operation.
 
 ---
 
-## Technology Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js (v18+) |
+| Runtime | Node.js 18+ |
 | Framework | Express.js 5 |
 | Database | MySQL 8.0+ (InnoDB) |
 | DB Driver | mysql2/promise (connection pooling) |
@@ -19,213 +19,130 @@ A RESTful API for a University Management System built with Node.js, Express.js,
 
 ---
 
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) v18 or higher
-- [MySQL Server](https://dev.mysql.com/downloads/mysql/) v8.0 or higher
-- Git
-
----
-
-## Setup Instructions
-
-### 1. Clone the repository
+## Setup
 
 ```bash
-git clone https://github.com/BSCS24032/University_Course_Registration_Management_System.git
-cd University_Course_Registration_Management_System
-```
-
-### 2. Set up the database
-
-Open a MySQL client (MySQL Workbench, CLI, etc.) and run the schema and seed files:
-
-```bash
+# 1. Load schema + seed into MySQL
 mysql -u root -p < schema.sql
 mysql -u root -p < seed.sql
-```
 
-This creates the `university_management_system` database with 18 tables (17 domain + 1 users) and 279 seed records including 4 test user accounts.
-
-### 3. Configure environment variables
-
-```bash
+# 2. Configure env
 cd backend
 cp .env.example .env
-```
+# edit .env with your MySQL credentials + any JWT_SECRET string
 
-Edit `.env` with your local MySQL credentials:
-
-```
-PORT=5000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=university_management_system
-JWT_SECRET=your_secret_key_here
-```
-
-### 4. Install dependencies and start
-
-```bash
+# 3. Install and run
 npm install
-npm run dev     # development mode with auto-reload (nodemon)
-# or
-npm start       # production mode
+npm run dev      # with nodemon
+# or: npm start  # plain node
 ```
 
-You should see:
-```
-Database connected successfully via Connection Pool!
-Server is running on port 5000
-```
-
-### 5. Verify
-
-- Health check: `GET http://localhost:5000/api/v1/health`
-- Swagger docs: `http://localhost:5000/api-docs`
+Server comes up on port 5000. Swagger UI: `http://localhost:5000/api-docs`. Health check: `GET /api/v1/health`.
 
 ---
 
-## Seed User Accounts
+## Seed Login Accounts
 
-All seed accounts use password: `Admin@123`
+Every instructor and every student now has a login account. **Password for all 39 accounts is `Admin@123`.**
 
-| Email | Role | linked_id |
+| Role | Count | Email pattern |
 |---|---|---|
-| admin@ums.edu.pk | Admin | — |
-| ahmed.khan@ums.edu.pk | Instructor | 1 (instructor_id) |
-| ali.ahmad@stu.ums.edu.pk | Student | 1 (student_id) |
-| librarian@ums.edu.pk | Librarian | — |
+| Admin | 1 | `admin@ums.edu.pk` |
+| Librarian | 1 | `librarian@ums.edu.pk` |
+| Instructor | 12 | `<first>.<last>@ums.edu.pk` — e.g. `ahmed.khan@ums.edu.pk` |
+| Student | 25 | `<first>.<last>@stu.ums.edu.pk` — e.g. `ali.ahmad@stu.ums.edu.pk` |
 
 ---
 
-## API Endpoints
+## Role Permissions (RBAC)
 
-### Authentication
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/v1/auth/register` | Optional (Admin token for elevated roles) | Register a new user (defaults to Student) |
-| POST | `/api/v1/auth/login` | None | Login and receive JWT token |
-
-### Courses & Sections
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/v1/courses` | Token | List all courses |
-| GET | `/api/v1/courses/sections` | Token | List all sections with course info |
-
-### Enrollment (ACID Transaction #1)
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/v1/enrollment` | Token + Admin/Student | Enroll in a section (with prerequisite check) |
-
-### Fee Payment (ACID Transaction #2)
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/v1/fees/my-fees` | Token + Student | View own fee records |
-| POST | `/api/v1/fees/pay` | Token + Admin/Student | Process a fee payment |
-
-### Attendance
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/v1/attendance` | Token + Instructor | Mark attendance for a section |
-| GET | `/api/v1/attendance/my-records` | Token + Student | View own attendance history |
-
-### Admin
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/v1/admin/dashboard` | Token + Admin | Admin dashboard |
+| Role | What they can do |
+|---|---|
+| **Admin** | Everything. CRUD on departments, programs, instructors, students; override per-student credit limits; add/remove courses from programs; dashboard stats; pay any fee; hostel allocations. |
+| **Instructor** | See their own sections; get rosters; create and delete assignments; grade submissions; assign single grades; apply threshold-based bulk grading; view section/course averages; mark attendance. |
+| **Student** | View eligible courses (restricted to their program); enroll/drop (respecting credit-limit, prerequisites, and program-course rules); submit assignments; view transcript and credit load; pay own fees; view own attendance; view own borrowed books. |
+| **Librarian** | Full CRUD on the book catalogue; issue books; accept returns; view all issues. |
 
 ---
 
 ## ACID Transactions
 
-### Transaction 1: Course Enrollment
-1. `BEGIN TRANSACTION`
-2. `SELECT ... FOR UPDATE` — lock section row
-3. Check capacity not exceeded
-4. Check no duplicate enrollment
-5. Verify all prerequisites completed
-6. `INSERT INTO enrollment` — trigger auto-increments enrolled_count
-7. `COMMIT` (or `ROLLBACK` on any failure)
+Five distinct transactional flows in the backend, each with `BEGIN` / `COMMIT` / `ROLLBACK`:
 
-### Transaction 2: Fee Payment
-1. `BEGIN TRANSACTION`
-2. `SELECT ... FOR UPDATE` — lock fee row
-3. Validate fee exists and is not already paid
-4. Calculate new amount using integer arithmetic (avoids float bugs)
-5. Prevent overpayment
-6. `UPDATE fee` with new paid_amount and status
-7. `COMMIT` (or `ROLLBACK` on any failure)
+1. **Enrollment** (`POST /api/v1/enrollment`) — locks section + student rows, enforces capacity, duplicate-prevention, program-course eligibility, credit-hour limit, and prerequisites. Trigger `trg_after_enrollment_insert` increments `section.enrolled_count`.
+2. **Drop Enrollment** (`PATCH /api/v1/enrollment/:id/drop`) — trigger `trg_after_enrollment_update` decrements `section.enrolled_count`.
+3. **Fee Payment** (`POST /api/v1/fees/pay`) — integer-arithmetic (paisa) to avoid float-equality bugs; row-level lock on fee voucher; prevents overpayment.
+4. **Grade Threshold Application** (`POST /api/v1/grades/apply-threshold`) — computes every enrolled student's weighted percentage, assigns a letter grade based on instructor-supplied cutoffs, recalculates each student's CGPA — all atomic.
+5. **Book Issue / Return** (`POST /api/v1/book-issues`, `PATCH /api/v1/book-issues/:id/return`) — triggers `trg_before_book_issue_insert` and `trg_after_book_return` handle `available_copies` and late-fee calculation.
+6. **Hostel Allocation** (`POST /api/v1/hostels/allocations`) — atomic capacity check + occupancy increment.
 
-Both transactions use `getConnection()` → `beginTransaction()` → `try/catch/finally` → `release()` pattern with proper rollback and connection cleanup.
+Every controller uses the `getConnection()` → `beginTransaction()` → `try/catch/finally` → `release()` pattern.
 
 ---
 
-## RBAC (Role-Based Access Control)
+## Key Features Added in This Revision
 
-4 roles enforced via JWT middleware:
-
-| Role | Permissions |
-|---|---|
-| **Admin** | Full access, create elevated user accounts, pay any fee |
-| **Instructor** | Mark attendance for sections |
-| **Student** | Enroll in courses (own only), pay own fees, view own attendance |
-| **Librarian** | Manage book issues (endpoints planned) |
-
----
-
-## Project Structure
-
-```
-backend/
-├── config/
-│   └── db.js                  — MySQL connection pool (exits on failure)
-├── controllers/
-│   ├── authController.js      — Register (with role whitelist), Login
-│   ├── courseController.js     — List courses and sections
-│   ├── enrollmentController.js — ACID enrollment transaction
-│   ├── feeController.js       — ACID fee payment transaction
-│   └── attendanceController.js — Mark and view attendance
-├── middleware/
-│   └── authMiddleware.js      — authenticateToken, authorizeRoles, optionalAuth
-├── routes/
-│   ├── authRoutes.js
-│   ├── courseRoutes.js
-│   ├── enrollmentRoutes.js
-│   ├── feeRoutes.js
-│   └── attendanceRoutes.js
-├── .env.example
-├── .gitignore
-├── package.json
-├── server.js                  — Express app entry point
-├── swagger.yaml               — OpenAPI 3.0 specification
-└── test.http                  — REST Client test requests
-```
+- **Program-course restriction** — students can only enroll in courses their program allows (enforced in the enrollment transaction by joining `program_course`).
+- **Per-student credit-hour limit** — each student has a `credit_limit` column (default 18, Admin can override). Enrollment refuses courses that would put the student over.
+- **Grade threshold grading** — `POST /grades/apply-threshold` takes a JSON map like `{"A": 90, "B": 80, "C": 70, "D": 60, "F": 0}` and a `section_id`, then atomically assigns grades to every enrolled student based on their weighted assignment average.
+- **Single grade assignment** — `POST /grades/assign` with `{enrollment_id, grade}` updates the enrollment and recalculates the student's CGPA.
+- **Averages** — `GET /grades/sections/:id/average` and `GET /grades/courses/:id/average` return AVG/MIN/MAX of grade-points.
+- **Admin stats dashboard** — `GET /admin/stats` returns counts, per-department breakdowns, fee summary, and top-enrolled courses.
+- **Full Librarian workflow** — every book CRUD operation plus transactional issue/return.
+- **Assignments & submissions** — Instructors create assignments, Students submit them (server computes `is_late`), Instructors grade submissions.
+- **Login accounts for every student and instructor** — seed expanded from 4 to 39 users.
+- **Drop enrollment endpoint** and **student transcript endpoint** using Phase-1 views.
 
 ---
 
-## Frontend
+## Endpoint Summary
 
-A React + Vite frontend is included in the `/frontend` directory. To run it:
+| Method | Route | Auth | Purpose |
+|---|---|---|---|
+| POST | `/auth/register` | Public / Admin for elevated | Register user |
+| POST | `/auth/login` | Public | Login, returns JWT |
+| GET | `/courses` | Any | List courses |
+| GET | `/courses/sections` | Any | List sections |
+| GET | `/courses/eligible` | Student | Program-eligible courses |
+| GET | `/courses/:id/prerequisites` | Any | Prerequisite list |
+| POST | `/enrollment` | Admin, Student | Enroll (ACID) |
+| GET | `/enrollment/my` | Student | My enrollments |
+| PATCH | `/enrollment/:id/drop` | Admin, Student | Drop |
+| POST | `/fees/pay` | Admin, Student | Pay fees (ACID) |
+| GET | `/fees/my-fees` | Student | My fee vouchers |
+| POST | `/attendance` | Instructor | Mark attendance |
+| GET | `/attendance/my-records` | Student | My attendance |
+| POST | `/assignments` | Instructor, Admin | Create assignment |
+| GET | `/assignments/section/:id` | Any | List section assignments |
+| GET | `/assignments/my` | Student | My assignments |
+| DELETE | `/assignments/:id` | Instructor, Admin | Delete |
+| POST | `/submissions` | Student | Submit |
+| PUT | `/submissions/:id/grade` | Instructor, Admin | Grade submission |
+| GET | `/submissions/assignment/:id` | Instructor, Admin | List submissions |
+| POST | `/grades/assign` | Instructor, Admin | Assign single grade |
+| POST | `/grades/apply-threshold` | Instructor, Admin | Bulk grade by threshold (ACID) |
+| GET | `/grades/sections/:id/average` | Instructor, Admin | Section average |
+| GET | `/grades/sections/:id/grade-sheet` | Instructor, Admin | Grade sheet |
+| GET | `/grades/courses/:id/average` | Instructor, Admin | Course average |
+| GET | `/books` | Any | Browse catalogue |
+| POST | `/books` | Librarian, Admin | Add book |
+| PUT/DELETE | `/books/:id` | Librarian, Admin | Update/delete |
+| POST | `/book-issues` | Librarian, Admin | Issue book (ACID) |
+| PATCH | `/book-issues/:id/return` | Librarian, Admin | Return (ACID) |
+| GET | `/book-issues` | Librarian, Admin | All issues |
+| GET | `/book-issues/my` | Student | My borrowing history |
+| GET | `/admin/stats` | Admin | Dashboard stats |
+| GET/POST/PUT/DELETE | `/admin/departments` | Admin | Department CRUD |
+| GET/POST/DELETE | `/admin/programs` | Admin | Program CRUD |
+| POST/DELETE | `/admin/program-courses` | Admin | Program-course mapping |
+| GET/POST/PUT | `/admin/instructors` | Admin | Instructor CRUD |
+| GET/PUT | `/admin/students[/:id]` | Admin | Student CRUD |
+| PATCH | `/admin/students/:id/credit-limit` | Admin | Override credit limit |
+| GET/POST/PATCH | `/hostels/...` | Admin | Hostel management |
+| GET | `/instructors/me/sections` | Instructor, Admin | My sections |
+| GET | `/instructors/sections/:id/roster` | Instructor, Admin | Roster |
+| GET | `/students/me/transcript` | Student | Transcript (view) |
+| GET | `/students/me/credit-load` | Student | Credit load (view) |
+| GET | `/students/me/profile` | Student | Profile |
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Opens at `http://localhost:5173`. Includes Login, Student Dashboard (enrollment, fees, attendance), Instructor Dashboard (mark attendance), and Admin Dashboard.
-
----
-
-## Database
-
-- **18 tables** (17 domain + users), fully normalized to 3NF
-- **5 triggers** (prerequisite validation, enrollment count, book inventory)
-- **3 views** (transcript, section roster, fee summary)
-- **18 custom indexes** for query performance
-- **275+ seed records** across all tables
-- Isolation level: `REPEATABLE READ` (InnoDB default)
-
-See `schema.sql`, `seed.sql`, and `performance.sql` for full details.
+See `swagger.yaml` / `/api-docs` for request/response schemas.
